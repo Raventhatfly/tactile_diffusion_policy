@@ -4,6 +4,7 @@ import mujoco
 import mujoco.viewer
 from gymnasium.envs.mujoco.mujoco_env import MujocoEnv
 
+# m = mujoco.MjModel.from_xml_path('./models/assets/quad_insert.xml')
 m = mujoco.MjModel.from_xml_path('./models/arx5.xml')
 d = mujoco.MjData(m)
 
@@ -30,9 +31,11 @@ with mujoco.viewer.launch_passive(m, d) as viewer:
     d.qpos[0] = 0.5
     d.qpos[1] = 0.5
     d.qpos[2] = 0.5
-    d.qpos[4] = 0.3
-    d.qpos[3] = 0.4
-    d.qpos[5] = 0.15
+    print(d.xfrc_applied)
+    # d.qpos[4] = 0.3
+    # d.qpos[3] = 0.4
+    # d.qpos[5] = 0.15
+    # print(d.sensor)
     
 
     # Rudimentary time keeping, will drift relative to wall clock.
