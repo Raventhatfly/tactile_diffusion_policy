@@ -3,42 +3,153 @@ import time
 import mujoco
 import mujoco.viewer
 from gymnasium.envs.mujoco.mujoco_env import MujocoEnv
+from motor_controller import MotorControlConfig, MotorController
+from utils import get_compensation
+import matplotlib.pyplot as plt
 
-# m = mujoco.MjModel.from_xml_path('./models/assets/quad_insert.xml')
-m = mujoco.MjModel.from_xml_path('./models/arx5.xml')
-d = mujoco.MjData(m)
+from threading import Thread
+import threading
 
-print(m.nv)
+from pynput import keyboard
+
+# dest = [0,0,0,0,0,0]
+dest = [0.5,0.5,0.5,0.5,0.5,0.5]
+
+def simulationThread():
+  m = mujoco.MjModel.from_xml_path('./models/R5a/urdf/R5a.xml')
+  d = mujoco.MjData(m)
+
+  print(m.nv)
+
+  i = 0
+  with mujoco.viewer.launch_passive(m, d) as viewer:
+    # Close the viewer automatically after 30 wall-seconds.
+
+    cfg = MotorControlConfig()
+    controller = MotorController(cfg)
+    controllers = []
+    
+    for i in range(6):
+      cfg = MotorControlConfig()
+      controller = MotorController(cfg)
+      cfg.kt = 0.2
+      match i:
+        case 0:
+          cfg.kp = 100000
+          cfg.kd = 600
+        case 1:
+          cfg.kp = 200
+          cfg.kd = 50
+        case 2:
+          cfg.kp = 200
+          cfg.kd = 30
+        case 3:
+          cfg.kp = 100
+          cfg.kd = 10
+        case 4:
+          cfg.kp = 30
+          cfg.kd = 5
+        case 5:
+          cfg.kp = 20
+          cfg.kd = 2
+      controllers.append(controller)
+
+    data = []
+    t = []
+    torque = []
+    cnt = 0
 
 
-with mujoco.viewer.launch_passive(m, d) as viewer:
-  # Close the viewer automatically after 30 wall-seconds.
-  while viewer.is_running():
-    step_start = time.time()
+    num_step = 1
+    step_cnt = 0
 
-    # mj_step can be replaced with code that also evaluates
-    # a policy and applies a control signal before stepping the physics.
-    mujoco.mj_step(m, d)
+    while viewer.is_running():
+      step_start = time.time()
 
-    # Example modification of a viewer option: toggle contact points every two seconds.
-    # with viewer.lock():
-    #   viewer.opt.flags[mujoco.mjtVisFlag.mjVIS_CONTACTPOINT] = int(d.time % 2)
+      # mj_step can be replaced with code that also evaluates
+      # a policy and applies a control signal before stepping the physics.
+      mujoco.mj_step(m, d)
 
-    # Pick up changes to the physics state, apply perturbations, update options from GUI.
-    viewer.sync()
+      viewer.sync()
 
+      compensation = get_compensation(m,d,controllers[0].param.kt)
+        
+      # compensation = controllers[0].get_compensation(d.qfrc_applied[0])
+      d.qfrc_applied[0] = controllers[0].output(d.qpos[0],d.qvel[0], dest[0] * step_cnt / num_step,0.0,compensation[0])
+      
+      # compensation = controllers[1].get_compensation(d.qfrc_applied[1])
+      d.qfrc_applied[1] = controllers[1].output(d.qpos[1],d.qvel[1], dest[1] * step_cnt / num_step,0.0,compensation[1])
+      # print(d.qpos[1])
+      # data.append(d.qpos[1])
+      # t.append(cnt)
+      # cnt += 1
 
-    d.qpos[0] = 0.5
-    d.qpos[1] = 0.5
-    d.qpos[2] = 0.5
-    print(d.xfrc_applied)
-    # d.qpos[4] = 0.3
-    # d.qpos[3] = 0.4
-    # d.qpos[5] = 0.15
-    # print(d.sensor)
+      # compensation = controllers[2].get_compensation(d.qfrc_applied[2])
+      d.qfrc_applied[2] = controllers[2].output(d.qpos[2],d.qvel[2], dest[2] * step_cnt / num_step,0,compensation[2])
+      # print(d.qpos[2])
+      # data.append(d.qpos[2])
+      # t.append(cnt)
+      # cnt += 1
+
+      # compensation = controllers[3].get_compensation(d.qfrc_applied[3])
+      d.qfrc_applied[3] = controllers[3].output(d.qpos[3],d.qvel[3], dest[3] * step_cnt / num_step,0,compensation[3])
+      # print(d.qpos[3])
+      # data.append(d.qpos[3])
+      # t.append(cnt)
+      # cnt += 1
+
+      # compensation = controllers[4].get_compensation(d.qfrc_applied[4])
+      d.qfrc_applied[4] = controllers[4].output(d.qpos[4],d.qvel[4], dest[4] * step_cnt / num_step,0,compensation[4])
+      # print(d.qpos[4])
+      # data.append(d.qpos[4])
+      # t.append(cnt)
+      # cnt += 1
+
+      # compensation = controllers[5].get_compensation(d.qfrc_applied[5])
+      d.qfrc_applied[5] = controllers[5].output(d.qpos[5],d.qvel[5], dest[5] * step_cnt / num_step,0,compensation[5])
+      print(d.qpos[5])
+      data.append(d.qpos[5])
+      t.append(cnt)
+      cnt += 1
+      # Rudimentary time keeping, will drift relative to wall clock.
+      time_until_next_step = m.opt.timestep - (time.time() - step_start)
+      if time_until_next_step > 0:
+        time.sleep(time_until_next_step)
+      
+      if step_cnt < num_step:
+        step_cnt += 1
+    plt.plot(t,data)
+    plt.show()
+    
     
 
-    # Rudimentary time keeping, will drift relative to wall clock.
-    time_until_next_step = m.opt.timestep - (time.time() - step_start)
-    if time_until_next_step > 0:
-      time.sleep(time_until_next_step)
+
+
+def keyThread():
+  key_pressed = {
+        keyboard.Key.up: False,  # +x
+        keyboard.Key.down: False,  # -x
+        keyboard.Key.left: False,  # +y
+        keyboard.Key.right: False,  # -y
+        keyboard.Key.page_up: False,  # +z
+        keyboard.Key.page_down: False,  # -z
+        keyboard.KeyCode.from_char("q"): False,  # +roll
+        keyboard.KeyCode.from_char("a"): False,  # -roll
+        keyboard.KeyCode.from_char("w"): False,  # +pitch
+        keyboard.KeyCode.from_char("s"): False,  # -pitch
+        keyboard.KeyCode.from_char("e"): False,  # +yaw
+        keyboard.KeyCode.from_char("d"): False,  # -yaw
+        keyboard.KeyCode.from_char("r"): False,  # open gripper
+        keyboard.KeyCode.from_char("f"): False,  # close gripper
+        keyboard.Key.space: False,  # reset to home
+  }
+  pass
+
+
+if __name__ == "__main__":
+  # sim_thread = Thread(targsim_thread.start()
+  # key_thread.start()et=keyThread)
+
+  # sim_thread.start()
+  # key_thread.start()
+  simulationThread()
