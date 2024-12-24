@@ -20,11 +20,28 @@ class RingBuffer:
             sum += self.buffer[i]
         return sum / self.size
     
+    def is_full(self):
+        if self.capacity == self.size:
+            return True
+        else:
+            return False
+
+buffer = RingBuffer(10) 
+
 def get_compensation(model,data,kt):
-    buffer = RingBuffer(10)
     orig_qacc = data.qacc.copy()
     data.qacc[:] = 0
     mujoco.mj_inverse(model,data)
-    buffer.append(data.qfrc_inverse)
+    buffer.append(data.qfrc_inverse.copy())
     data.qacc = orig_qacc.copy()
-    return buffer.get_mean() / kt
+    compensation = buffer.get_mean()
+    
+    if buffer.is_full():
+        compensation = compensation / kt
+    else:
+        compensation = np.zeros(compensation.size)
+
+    return compensation
+
+
+    

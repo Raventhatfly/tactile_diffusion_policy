@@ -53,3 +53,5 @@ class MotorController():
         self.buffer.append(curr_torque)
         return self.buffer.get_mean() / self.param.kt
     
+
+    

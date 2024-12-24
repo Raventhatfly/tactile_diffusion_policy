@@ -87,4 +87,7 @@
       </body>
     </body>
   </worldbody>
+  <contact>
+    <exclude body1="link7" body2="link8"/>
+  </contact>
 </mujoco>
