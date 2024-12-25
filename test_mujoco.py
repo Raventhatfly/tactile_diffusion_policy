@@ -12,7 +12,7 @@ import threading
 
 from pynput import keyboard
 
-dest = [0,0,0,0,0,0,0.01,0.01]
+# dest = [0,0,0,0,0,0,0.03,0.03]
 dest = [0.5,0.5,0.5,0.5,0.5,0.5, 0.01, 0.01]
 
 def simulationThread():
@@ -20,8 +20,6 @@ def simulationThread():
   d = mujoco.MjData(m)
   # d.qfrc_applied[6] = 0
   # d.qfrc_applied[7] = 0
-
-  print(m.nv)
 
   i = 0
   with mujoco.viewer.launch_passive(m, d) as viewer:
@@ -31,7 +29,7 @@ def simulationThread():
     controller = MotorController(cfg)
     controllers = []
     
-    for i in range(8):
+    for i in range(m.nv):
       cfg = MotorControlConfig()
       controller = MotorController(cfg)
       cfg.kt = 0.2
@@ -77,52 +75,10 @@ def simulationThread():
       # mj_step can be replaced with code that also evaluates
       # a policy and applies a control signal before stepping the physics.
       mujoco.mj_step(m, d)
-      # print(d.qpos[6])
-      # data.append(d.qpos[6])
-      # t.append(cnt)
-      # cnt += 1
-
       viewer.sync()
-
       compensation = get_compensation(m,d,controllers[0].param.kt)
-        
-      # compensation = controllers[0].get_compensation(d.qfrc_applied[0])
-      d.qfrc_applied[0] = controllers[0].output(d.qpos[0],d.qvel[0], dest[0] * step_cnt / num_step,0.0,compensation[0])
-      
-      # compensation = controllers[1].get_compensation(d.qfrc_applied[1])
-      d.qfrc_applied[1] = controllers[1].output(d.qpos[1],d.qvel[1], dest[1] * step_cnt / num_step,0.0,compensation[1])
-      # print(d.qpos[1])
-      # data.append(d.qpos[1])
-      # t.append(cnt)
-      # cnt += 1
-
-      # d.qfrc_applied[6] = 0
-      # d.qfrc_applied[7] = 0
-      # compensation = controllers[2].get_compensation(d.qfrc_applied[2])
-      d.qfrc_applied[2] = controllers[2].output(d.qpos[2],d.qvel[2], dest[2] * step_cnt / num_step,0,compensation[2])
-
-      d.qfrc_applied[3] = controllers[3].output(d.qpos[3],d.qvel[3], dest[3] * step_cnt / num_step,0,compensation[3])
-
-      d.qfrc_applied[4] = controllers[4].output(d.qpos[4],d.qvel[4], dest[4] * step_cnt / num_step,0,compensation[4])
-
-      d.qfrc_applied[5] = controllers[5].output(d.qpos[5],d.qvel[5], dest[5] * step_cnt / num_step,0,compensation[5])
-
-      d.qfrc_applied[6] = controllers[6].output(d.qpos[6],d.qvel[6], dest[6] * step_cnt / num_step,0,compensation[6])
-
-      # print(str(compensation[6]) + " " + str(d.qfrc_applied[6]))
-
-      d.qfrc_applied[7] = controllers[7].output(d.qpos[7],d.qvel[7], dest[7] * step_cnt / num_step,0,compensation[7])
-
-      # d.qfrc_applied[6] = 0
-      # d.qfrc_applied[7] = 0
-
-      # print(d.qpos[7])
-      # data.append(d.qpos[7])
-      # print(d.qfrc_applied[6])
-      print(d.qpos[6])
-      data.append(d.qpos[6])
-      t.append(cnt)
-      cnt += 1
+      for i in range(m.nv):
+        d.qfrc_applied[i] = controllers[i].output(d.qpos[i],d.qvel[i], dest[i] * step_cnt / num_step,0.0,compensation[i])
 
       time_until_next_step = m.opt.timestep - (time.time() - step_start)
       if time_until_next_step > 0:
@@ -130,12 +86,7 @@ def simulationThread():
       
       if step_cnt < num_step:
         step_cnt += 1
-    plt.plot(t,data)
-    plt.show()
     
-    
-
-
 
 def keyThread():
   key_pressed = {
@@ -159,9 +110,20 @@ def keyThread():
 
 
 if __name__ == "__main__":
-  # sim_thread = Thread(targsim_thread.start()
-  # key_thread.start()et=keyThread)
+  sim_thread = Thread(simulationThread())
+  key_thread = Thread(keyThread())
+  sim_thread.start()
+  key_thread.start()
 
-  # sim_thread.start()
-  # key_thread.start()
-  simulationThread()
+
+
+
+### Useful Code Snippets
+      # print(d.qpos[1])
+      # data.append(d.qpos[1])
+      # t.append(cnt)
+      # cnt += 1
+
+      # d.qfrc_applied[6] = 0
+      # d.qfrc_applied[7] = 0
+      # compensation = controllers[2].get_compensation(d.qfrc_applied[2])
