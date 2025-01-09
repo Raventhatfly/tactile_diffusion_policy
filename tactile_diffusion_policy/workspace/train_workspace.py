@@ -11,7 +11,7 @@ import tqdm
 import numpy as np
 import shutil
 from tactile_diffusion_policy.workspace.base_workspace import BaseWorkspace
-# from tactile_diffusion_policy.policy.diffusion_unet_hybrid_image_policy import DiffusionUnetHybridImagePolicy
+from tactile_diffusion_policy.policy.diffusion_policy import DiffusionPolicy
 from tactile_diffusion_policy.dataset.base_dataset import BaseImageDataset
 from tactile_diffusion_policy.env_runner.base_image_runner import BaseImageRunner
 from tactile_diffusion_policy.common.checkpoint_util import TopKCheckpointManager
@@ -35,9 +35,9 @@ class TrainDiffusionWorkspace(BaseWorkspace):
         random.seed(seed)
 
         # configure model
-        self.model: DiffusionUnetHybridImagePolicy = hydra.utils.instantiate(cfg.policy)
+        self.model: DiffusionPolicy = hydra.utils.instantiate(cfg.policy)
 
-        self.ema_model: DiffusionUnetHybridImagePolicy = None
+        self.ema_model: DiffusionPolicy = None
         if cfg.training.use_ema:
             self.ema_model = copy.deepcopy(self.model)
 

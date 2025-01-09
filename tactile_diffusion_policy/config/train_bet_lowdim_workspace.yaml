@@ -1,9 +1,9 @@
 defaults:
   - _self_
-  - task: blockpush_lowdim_seed
+  - task: pick_and_place
 
 name: train_bet_lowdim
-_target_: diffusion_policy.workspace.train_bet_lowdim_workspace.TrainBETLowdimWorkspace
+_target_: tactile_diffusion_policy.workspace.train_bet_lowdim_workspace.TrainBETLowdimWorkspace
 
 obs_dim: ${task.obs_dim}
 action_dim: ${task.action_dim}
@@ -22,10 +22,10 @@ obs_as_global_cond: False
 pred_action_steps_only: False
 
 policy:
-  _target_: diffusion_policy.policy.bet_lowdim_policy.BETLowdimPolicy
+  _target_: tactile_diffusion_policy.policy.bet_lowdim_policy.BETLowdimPolicy
 
   action_ae:
-    _target_: diffusion_policy.model.bet.action_ae.discretizers.k_means.KMeansDiscretizer
+    _target_: tacitle_diffusion_policy.model.bet.action_ae.discretizers.k_means.KMeansDiscretizer
     num_bins: 24
     action_dim: ${action_dim}
     predict_offsets: True
@@ -35,7 +35,7 @@ policy:
     output_dim: ${obs_dim}
   
   state_prior:
-    _target_: diffusion_policy.model.bet.latent_generators.mingpt.MinGPT
+    _target_: tactile_diffusion_policy.model.bet.latent_generators.mingpt.MinGPT
 
     discrete_input: false
     input_dim: ${obs_dim}
