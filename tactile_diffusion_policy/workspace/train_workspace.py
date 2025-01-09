@@ -1,12 +1,3 @@
-if __name__ == "__main__":
-    import sys
-    import os
-    import pathlib
-
-    ROOT_DIR = str(pathlib.Path(__file__).parent.parent.parent)
-    sys.path.append(ROOT_DIR)
-    os.chdir(ROOT_DIR)
-
 import os
 import hydra
 import torch
@@ -19,19 +10,19 @@ import wandb
 import tqdm
 import numpy as np
 import shutil
-from diffusion_policy.workspace.base_workspace import BaseWorkspace
-from diffusion_policy.policy.ibc_dfo_hybrid_image_policy import IbcDfoHybridImagePolicy
-from diffusion_policy.dataset.base_dataset import BaseImageDataset
-from diffusion_policy.env_runner.base_image_runner import BaseImageRunner
-from diffusion_policy.common.checkpoint_util import TopKCheckpointManager
-from diffusion_policy.common.json_logger import JsonLogger
-from diffusion_policy.common.pytorch_util import dict_apply, optimizer_to
-from diffusion_policy.model.diffusion.ema_model import EMAModel
-from diffusion_policy.model.common.lr_scheduler import get_scheduler
+from tactile_diffusion_policy.workspace.base_workspace import BaseWorkspace
+# from tactile_diffusion_policy.policy.diffusion_unet_hybrid_image_policy import DiffusionUnetHybridImagePolicy
+from tactile_diffusion_policy.dataset.base_dataset import BaseImageDataset
+from tactile_diffusion_policy.env_runner.base_image_runner import BaseImageRunner
+from tactile_diffusion_policy.common.checkpoint_util import TopKCheckpointManager
+from tactile_diffusion_policy.common.json_logger import JsonLogger
+from tactile_diffusion_policy.common.pytorch_util import dict_apply, optimizer_to
+from tactile_diffusion_policy.model.diffusion.ema_model import EMAModel
+from tactile_diffusion_policy.model.common.lr_scheduler import get_scheduler
 
 OmegaConf.register_new_resolver("eval", eval, replace=True)
 
-class TrainIbcDfoHybridWorkspace(BaseWorkspace):
+class TrainDiffusionWorkspace(BaseWorkspace):
     include_keys = ['global_step', 'epoch']
 
     def __init__(self, cfg: OmegaConf, output_dir=None):
@@ -44,7 +35,11 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
         random.seed(seed)
 
         # configure model
-        self.model: IbcDfoHybridImagePolicy= hydra.utils.instantiate(cfg.policy)
+        self.model: DiffusionUnetHybridImagePolicy = hydra.utils.instantiate(cfg.policy)
+
+        self.ema_model: DiffusionUnetHybridImagePolicy = None
+        if cfg.training.use_ema:
+            self.ema_model = copy.deepcopy(self.model)
 
         # configure training state
         self.optimizer = hydra.utils.instantiate(
@@ -76,6 +71,8 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
         val_dataloader = DataLoader(val_dataset, **cfg.val_dataloader)
 
         self.model.set_normalizer(normalizer)
+        if cfg.training.use_ema:
+            self.ema_model.set_normalizer(normalizer)
 
         # configure lr scheduler
         lr_scheduler = get_scheduler(
@@ -89,6 +86,13 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
             # however huggingface diffusers steps it every batch
             last_epoch=self.global_step-1
         )
+
+        # configure ema
+        ema: EMAModel = None
+        if cfg.training.use_ema:
+            ema = hydra.utils.instantiate(
+                cfg.ema,
+                model=self.ema_model)
 
         # configure env
         env_runner: BaseImageRunner
@@ -118,6 +122,8 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
         # device transfer
         device = torch.device(cfg.training.device)
         self.model.to(device)
+        if self.ema_model is not None:
+            self.ema_model.to(device)
         optimizer_to(self.optimizer, device)
 
         # save batch for sampling
@@ -157,6 +163,10 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
                             self.optimizer.step()
                             self.optimizer.zero_grad()
                             lr_scheduler.step()
+                        
+                        # update ema
+                        if cfg.training.use_ema:
+                            ema.step(self.model)
 
                         # logging
                         raw_loss_cpu = raw_loss.item()
@@ -187,6 +197,8 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
 
                 # ========= eval for this epoch ==========
                 policy = self.model
+                if cfg.training.use_ema:
+                    policy = self.ema_model
                 policy.eval()
 
                 # run rollout
@@ -217,22 +229,14 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
                 if (self.epoch % cfg.training.sample_every) == 0:
                     with torch.no_grad():
                         # sample trajectory from training set, and evaluate difference
-                        batch = train_sampling_batch
-                        n_samples = cfg.training.sample_max_batch
-                        batch = dict_apply(train_sampling_batch, 
-                            lambda x: x.to(device, non_blocking=True))
-                        obs_dict = dict_apply(batch['obs'], lambda x: x[:n_samples])
+                        batch = dict_apply(train_sampling_batch, lambda x: x.to(device, non_blocking=True))
+                        obs_dict = batch['obs']
                         gt_action = batch['action']
                         
                         result = policy.predict_action(obs_dict)
-                        pred_action = result['action']
-                        start = cfg.n_obs_steps - 1
-                        end = start + cfg.n_action_steps
-                        gt_action = gt_action[:,start:end]
+                        pred_action = result['action_pred']
                         mse = torch.nn.functional.mse_loss(pred_action, gt_action)
-                        # log
                         step_log['train_action_mse_error'] = mse.item()
-                        # release RAM
                         del batch
                         del obs_dict
                         del gt_action
@@ -270,14 +274,3 @@ class TrainIbcDfoHybridWorkspace(BaseWorkspace):
                 json_logger.log(step_log)
                 self.global_step += 1
                 self.epoch += 1
-
-@hydra.main(
-    version_base=None,
-    config_path=str(pathlib.Path(__file__).parent.parent.joinpath("config")), 
-    config_name=pathlib.Path(__file__).stem)
-def main(cfg):
-    workspace = TrainIbcDfoHybridWorkspace(cfg)
-    workspace.run()
-
-if __name__ == "__main__":
-    main()
