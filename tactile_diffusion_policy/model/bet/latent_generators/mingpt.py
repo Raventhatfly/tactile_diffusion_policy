@@ -2,11 +2,11 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import einops
-import diffusion_policy.model.bet.latent_generators.latent_generator as latent_generator
+import tactile_diffusion_policy.model.bet.latent_generators.latent_generator as latent_generator
 
-import diffusion_policy.model.bet.libraries.mingpt.model as mingpt_model
-import diffusion_policy.model.bet.libraries.mingpt.trainer as mingpt_trainer
-from diffusion_policy.model.bet.libraries.loss_fn import FocalLoss, soft_cross_entropy
+import tactile_diffusion_policy.model.bet.libraries.mingpt.model as mingpt_model
+import tactile_diffusion_policy.model.bet.libraries.mingpt.trainer as mingpt_trainer
+from tactile_diffusion_policy.model.bet.libraries.loss_fn import FocalLoss, soft_cross_entropy
 
 from typing import Optional, Tuple
 
