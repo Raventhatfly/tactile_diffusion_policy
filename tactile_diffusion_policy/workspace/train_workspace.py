@@ -18,7 +18,7 @@ from tactile_diffusion_policy.common.checkpoint_util import TopKCheckpointManage
 from tactile_diffusion_policy.common.json_logger import JsonLogger
 from tactile_diffusion_policy.common.pytorch_util import dict_apply, optimizer_to
 from tactile_diffusion_policy.model.diffusion.ema_model import EMAModel
-from tactile_diffusion_policy.model.common.lr_scheduler import get_scheduler
+# from tactile_diffusion_policy.model.common.lr_scheduler import get_scheduler
 
 OmegaConf.register_new_resolver("eval", eval, replace=True)
 
@@ -42,8 +42,8 @@ class TrainDiffusionWorkspace(BaseWorkspace):
             self.ema_model = copy.deepcopy(self.model)
 
         # configure training state
-        self.optimizer = hydra.utils.instantiate(
-            cfg.optimizer, params=self.model.parameters())
+        # self.optimizer = hydra.utils.instantiate(
+        #     cfg.optimizer, params=self.model.parameters())
 
         # configure training state
         self.global_step = 0
@@ -74,18 +74,18 @@ class TrainDiffusionWorkspace(BaseWorkspace):
         if cfg.training.use_ema:
             self.ema_model.set_normalizer(normalizer)
 
-        # configure lr scheduler
-        lr_scheduler = get_scheduler(
-            cfg.training.lr_scheduler,
-            optimizer=self.optimizer,
-            num_warmup_steps=cfg.training.lr_warmup_steps,
-            num_training_steps=(
-                len(train_dataloader) * cfg.training.num_epochs) \
-                    // cfg.training.gradient_accumulate_every,
-            # pytorch assumes stepping LRScheduler every epoch
-            # however huggingface diffusers steps it every batch
-            last_epoch=self.global_step-1
-        )
+        # # configure lr scheduler
+        # lr_scheduler = get_scheduler(
+        #     cfg.training.lr_scheduler,
+        #     optimizer=self.optimizer,
+        #     num_warmup_steps=cfg.training.lr_warmup_steps,
+        #     num_training_steps=(
+        #         len(train_dataloader) * cfg.training.num_epochs) \
+        #             // cfg.training.gradient_accumulate_every,
+        #     # pytorch assumes stepping LRScheduler every epoch
+        #     # however huggingface diffusers steps it every batch
+        #     last_epoch=self.global_step-1
+        # )
 
         # configure ema
         ema: EMAModel = None
@@ -124,7 +124,7 @@ class TrainDiffusionWorkspace(BaseWorkspace):
         self.model.to(device)
         if self.ema_model is not None:
             self.ema_model.to(device)
-        optimizer_to(self.optimizer, device)
+        # optimizer_to(self.optimizer, device)
 
         # save batch for sampling
         train_sampling_batch = None
@@ -158,11 +158,11 @@ class TrainDiffusionWorkspace(BaseWorkspace):
                         loss = raw_loss / cfg.training.gradient_accumulate_every
                         loss.backward()
 
-                        # step optimizer
-                        if self.global_step % cfg.training.gradient_accumulate_every == 0:
-                            self.optimizer.step()
-                            self.optimizer.zero_grad()
-                            lr_scheduler.step()
+                        # # step optimizer
+                        # if self.global_step % cfg.training.gradient_accumulate_every == 0:
+                        #     self.optimizer.step()
+                        #     self.optimizer.zero_grad()
+                        #     lr_scheduler.step()
                         
                         # update ema
                         if cfg.training.use_ema:
@@ -176,7 +176,7 @@ class TrainDiffusionWorkspace(BaseWorkspace):
                             'train_loss': raw_loss_cpu,
                             'global_step': self.global_step,
                             'epoch': self.epoch,
-                            'lr': lr_scheduler.get_last_lr()[0]
+                            # 'lr': lr_scheduler.get_last_lr()[0]
                         }
 
                         is_last_batch = (batch_idx == (len(train_dataloader)-1))
