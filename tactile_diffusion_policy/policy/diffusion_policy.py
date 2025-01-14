@@ -61,6 +61,8 @@ class DiffusionPolicy(BaseImagePolicy):
                 obs_config['rgb'].append(key)
             elif type == 'low_dim':
                 obs_config['low_dim'].append(key)
+            elif type == 'torque':
+                obs_config['torque'].append(key)
             else:
                 raise RuntimeError(f"Unsupported obs type: {type}")
 

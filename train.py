@@ -26,9 +26,13 @@ def main(cfg: OmegaConf):
     # resolve immediately so all the ${now:} resolvers
     # will use the same time.
     OmegaConf.resolve(cfg)
+    # from tactile_diffusion_policy.workspace.train_workspace import DiffusionWorkspace
+    # from tactile_diffusion_policy.dataset.pick_and_place_dataset import PickAndPlaceDataset
+
     cls = hydra.utils.get_class(cfg._target_)
+    
     workspace: BaseWorkspace = cls(cfg)
-    # workspace.run()
+    workspace.run()
 
 if __name__ == "__main__":
     main()

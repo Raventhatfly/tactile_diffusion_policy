@@ -1,25 +1,22 @@
 defaults:
   - _self_
-  - task: blockpush_lowdim_seed
+  - task: pick_and_place
 
-name: train_bet_lowdim
+name: train_diffusion
 _target_: tactile_diffusion_policy.workspace.train_workspace.TrainDiffusionWorkspace
 
-obs_dim: ${task.obs_dim}
-action_dim: ${task.action_dim}
-keypoint_dim: ${task.keypoint_dim}
 task_name: ${task.name}
+shape_meta: ${task.shape_meta}
 exp_name: "default"
 
-horizon: 3
-n_obs_steps: 3
-n_action_steps: 1
+horizon: 16
+n_obs_steps: 2
+n_action_steps: 8
 n_latency_steps: 0
+dataset_obs_steps: ${n_obs_steps}
 past_action_visible: False
 keypoint_visible_rate: 1.0
-obs_as_local_cond: False
-obs_as_global_cond: False
-pred_action_steps_only: False
+obs_as_cond: True
 
 policy:
   _target_: tactile_diffusion_policy.policy.diffusion_policy.DiffusionPolicy
@@ -39,56 +36,54 @@ policy:
     steps_offset: 0
     prediction_type: epsilon # or sample
 
-  action_ae:
-    _target_: tactile_diffusion_policy.model.bet.action_ae.discretizers.k_means.KMeansDiscretizer
-    num_bins: 24
-    action_dim: ${action_dim}
-    predict_offsets: True
-  
-  obs_encoding_net:
-    _target_: torch.nn.Identity
-    output_dim: ${obs_dim}
-  
-  state_prior:
-    _target_: tactile_diffusion_policy.model.bet.latent_generators.mingpt.MinGPT
-
-    discrete_input: false
-    input_dim: ${obs_dim}
-
-    vocab_size: ${policy.action_ae.num_bins}
-
-    # Architecture details
-    n_layer: 4
-    n_head: 4
-    n_embd: 72
-
-    block_size: ${horizon}  # Length of history/context
-    predict_offsets: True
-    offset_loss_scale: 1000.0  # actions are very small
-    focal_loss_gamma: 2.0
-    action_dim: ${action_dim}
-
   horizon: ${horizon}
+  n_action_steps: ${eval:'${n_action_steps}+${n_latency_steps}'}
   n_obs_steps: ${n_obs_steps}
-  n_action_steps: ${n_action_steps}
+  num_inference_steps: 8
+
+  crop_shape: [216, 288] # ch, cw 320x240 90%
+  obs_encoder_group_norm: True
+  eval_fixed_crop: True
+
+  n_layer: 8
+  n_cond_layers: 0  # >0: use transformer encoder for cond, otherwise use MLP
+  n_head: 4
+  n_emb: 256
+  p_drop_emb: 0.0
+  p_drop_attn: 0.3
+  causal_attn: True
+  time_as_cond: True # if false, use BERT like encoder only arch, time as input
+  obs_as_cond: ${obs_as_cond}
+
+  # scheduler.step params
+  # predict_epsilon: True
+
+ema:
+  _target_: tactile_diffusion_policy.model.diffusion.ema_model.EMAModel
+  update_after_step: 0
+  inv_gamma: 1.0
+  power: 0.75
+  min_value: 0.0
+  max_value: 0.9999
 
 dataloader:
-  batch_size: 256
-  num_workers: 1
+  batch_size: 64
+  num_workers: 8
   shuffle: True
   pin_memory: True
-  persistent_workers: False
+  persistent_workers: True
 
 val_dataloader:
-  batch_size: 256
-  num_workers: 1
+  batch_size: 64
+  num_workers: 8
   shuffle: False
   pin_memory: True
-  persistent_workers: False
+  persistent_workers: True
 
 optimizer:
-  learning_rate: 0.0001 # 1e-4
-  weight_decay: 0.1
+  transformer_weight_decay: 1.0e-3
+  obs_encoder_weight_decay: 1.0e-6
+  learning_rate: 1.0e-4
   betas: [0.9, 0.95]
 
 training:
@@ -118,7 +113,7 @@ training:
   tqdm_interval_sec: 1.0
 
 logging:
-  project: diffusion_policy_debug
+  project: tactile_diffusion_policy_debug
   resume: True
   mode: online
   name: ${now:%Y.%m.%d-%H.%M.%S}_${name}_${task_name}
@@ -128,10 +123,10 @@ logging:
 
 checkpoint:
   topk:
-    monitor_key: test_mean_score
-    mode: max
+    monitor_key: train_loss
+    mode: min
     k: 5
-    format_str: 'epoch={epoch:04d}-test_mean_score={test_mean_score:.3f}.ckpt'
+    format_str: 'epoch={epoch:04d}-train_loss={train_loss:.3f}.ckpt'
   save_last_ckpt: True
   save_last_snapshot: False
 
