@@ -16,7 +16,7 @@ import torch
 import dill
 import wandb
 import json
-from diffusion_policy.workspace.base_workspace import BaseWorkspace
+from tactile_diffusion_policy.workspace.base_workspace import BaseWorkspace
 
 @click.command()
 @click.option('-c', '--checkpoint', required=True)
