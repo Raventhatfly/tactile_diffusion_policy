@@ -23,12 +23,12 @@ shape_meta: &shape_meta
     joint_pos:
       shape: [7]
       type: low_dim
-    joint_vel:
-      shape: [7]
-      type: low_dim
-    joint_torque:
-      shape: [20, 7]
-      type: low_dim
+    # joint_vel:
+    #   shape: [7]
+    #   type: low_dim
+    # joint_torque:
+    #   shape: [20, 7]
+    #   type: low_dim
   action: 
     shape: [7]
 

@@ -81,10 +81,11 @@ val_dataloader:
   persistent_workers: True
 
 optimizer:
-  transformer_weight_decay: 1.0e-3
-  obs_encoder_weight_decay: 1.0e-6
-  learning_rate: 1.0e-4
-  betas: [0.9, 0.95]
+  _target_: torch.optim.AdamW
+  lr: 1.0e-4
+  betas: [0.95, 0.999]
+  eps: 1.0e-8
+  weight_decay: 1.0e-6
 
 training:
   device: "cuda:0"
@@ -95,7 +96,7 @@ training:
   lr_scheduler: cosine
   # Transformer needs LR warmup
   lr_warmup_steps: 500
-  num_epochs: 600
+  num_epochs: 100
   gradient_accumulate_every: 1
   # EMA destroys performance when used with BatchNorm
   # replace BatchNorm with GroupNorm.

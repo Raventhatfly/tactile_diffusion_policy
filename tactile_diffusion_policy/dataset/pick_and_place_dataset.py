@@ -40,7 +40,6 @@ class PickAndPlaceDataset(BaseImageDataset):
             max_train_episodes=None,
             delta_action=False,
         ):
-        print(dataset_path)
         assert os.path.isdir(dataset_path)
         
         self.replay_buffer = ReplayBuffer.copy_from_path(
