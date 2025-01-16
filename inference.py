@@ -29,16 +29,18 @@ def main():
 
     delta_action = cfg.task.dataset.get('delta_action', False)
     dt = 0.1
-
-    obs = env.get_obs()
-    with torch.no_grad():
-        policy.reset()
-        result = policy.predict_action(obs)
-        action = result['action'][0].detach().to('cpu').numpy()
-        assert action.shape[-1] == 2
-        del result
-
-
+    with env:
+        while True:
+            obs = env.get_obs()
+            with torch.no_grad():
+                policy.reset()
+                result = policy.predict_action(obs)
+                action = result['action'][0].detach().to('cpu').numpy()
+                assert action.shape[-1] == 2
+                del result
+            if input("Stop Inference? (y/n)") == "y":
+                break
+            env.exec_actions(action)
 
 if __name__ == "__main__":
     main()
