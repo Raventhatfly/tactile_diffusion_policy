@@ -1,5 +1,18 @@
 # Information on how to run diffusion policy inference on ARX R5/L5 Arm
 
+## HuggingFace Hub Problem
+
+While running diffusion policy, an error relating to hugging face hub might be encountered.
+Please first remove it by:
+```shell
+mamba remove huggingface_hub
+```
+Then install it by:
+```shell
+mamba install huggingface-hub==0.20.2 -c conda-forge
+```
+Downgrading it to 0.20.2 version fix the problem.
+
 ## Merging two environments together
 
 After cloning the repo make sure that arx5-sdk submodule is added successfully; 
