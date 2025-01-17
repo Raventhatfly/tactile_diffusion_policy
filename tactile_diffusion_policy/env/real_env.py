@@ -36,7 +36,7 @@ class RealEnv:
         np.set_printoptions(precision=3, suppress=True)
         interface = "can0"
         urdf = "../models/arx5.urdf"
-        self.controller = arx5.Arx5CartesianController("L5", interface, urdf)
+        self.controller = Arx5CartesianController("L5", interface, urdf)
         
         self.robot_config = self.controller.get_robot_config()
         self.controller_config = self.controller.get_controller_config()
