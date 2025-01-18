@@ -7,8 +7,8 @@ from tactile_diffusion_policy.common.pytorch_util import dict_apply
 def main():
     env = RealEnv()
     # load checkpoint
-    ckpt_path = "To be deinfed"
-    payload = torch.load(open(ckpt_path, 'rb')) # pickle_module=dill
+    ckpt_path = "latest.ckpt"
+    payload = torch.load(open(ckpt_path, 'rb'))
     cfg = payload['cfg']
     cls = hydra.utils.get_class(cfg._target_)
     workspace = cls(cfg)

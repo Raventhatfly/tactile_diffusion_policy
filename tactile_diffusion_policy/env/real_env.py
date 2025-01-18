@@ -5,6 +5,7 @@ from threading import Thread, Event, Lock
 import numpy as np
 import pyrealsense2 as rs
 
+curr_dir = os.getcwd()
 ROOT_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "arx5-sdk")
 ROOT_DIR = os.path.join(ROOT_DIR, "python")
 sys.path.append(ROOT_DIR)
@@ -12,9 +13,11 @@ os.chdir(ROOT_DIR)
 print(ROOT_DIR)
 from arx5_interface import Arx5CartesianController, EEFState, Gain
 
+os.chdir(curr_dir)
+
 class DoubleBuffer():
     def __init__(self):
-        self.frame = dict(2)
+        self.frame = list([None,None])
         self.curr_frame = 0
         self.lock = Lock()
     
@@ -35,8 +38,9 @@ class RealEnv:
     def __init__(self):
         np.set_printoptions(precision=3, suppress=True)
         interface = "can0"
-        urdf = "../models/arx5.urdf"
-        self.controller = arx5.Arx5CartesianController("L5", interface, urdf)
+        print(ROOT_DIR)
+        urdf = os.path.join(ROOT_DIR, "../models/arx5.urdf")
+        self.controller = Arx5CartesianController("L5", interface, urdf)
         
         self.robot_config = self.controller.get_robot_config()
         self.controller_config = self.controller.get_controller_config()
