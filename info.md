@@ -22,3 +22,10 @@ And then cd to the `conda_environments/py39_environment.yaml` folder and enter:
 ```shell
 conda env update --name robodiff --file py39_environment.yaml
 ```
+
+## Running the Training Script
+
+## Runing the Inference Script
+```shell
+python inference.py --config-dir=./tactile_diffusion_policy/config --config-name=train_diffusion_workspace.yaml
+```

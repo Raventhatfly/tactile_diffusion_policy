@@ -3,6 +3,7 @@ import torch
 import hydra
 from tactile_diffusion_policy.workspace.base_workspace import BaseWorkspace
 from tactile_diffusion_policy.common.pytorch_util import dict_apply
+import os
 
 def main():
     env = RealEnv()
@@ -10,7 +11,11 @@ def main():
     ckpt_path = "latest.ckpt"
     payload = torch.load(open(ckpt_path, 'rb'))
     cfg = payload['cfg']
+    # print(cfg)
+    # print(os.getcwd())
+    # from tactile_diffusion_policy.workspace.train_workspace import TrainDiffusionWorkspace
     cls = hydra.utils.get_class(cfg._target_)
+    # print(cls)
     workspace = cls(cfg)
     workspace: BaseWorkspace
     workspace.load_payload(payload, exclude_keys=None, include_keys=None)
@@ -23,24 +28,33 @@ def main():
     device = torch.device('cuda')
     policy.eval().to(device)
 
-    # set inference params
+    # # set inference params
     policy.num_inference_steps = 16 # DDIM inference iterations
     policy.n_action_steps = policy.horizon - policy.n_obs_steps + 1
 
     # delta_action = cfg.task.dataset.get('delta_action', False)
     # dt = 0.1
+    # with env:
+    #     while True:
+    #         obs = env.get_obs()
+    #         with torch.no_grad():
+    #             policy.reset()
+    #             result = policy.predict_action(obs)
+    #             action = result['action'][0].detach().to('cpu').numpy()
+    #             assert action.shape[-1] == 2
+    #             del result
+    #         if input("Stop Inference? (y/n)") == "y":
+    #             break
+    #         env.exec_actions(action)
     with env:
-        while True:
-            obs = env.get_obs()
-            with torch.no_grad():
-                policy.reset()
-                result = policy.predict_action(obs)
-                action = result['action'][0].detach().to('cpu').numpy()
-                assert action.shape[-1] == 2
-                del result
-            if input("Stop Inference? (y/n)") == "y":
-                break
-            env.exec_actions(action)
+        obs = env.get_obs()
+        with torch.no_grad():
+            policy.reset()
+            print(obs["joint_pos"].shape)
+            print(obs["img1"].shape)
+            # print(obs)
+            # result = policy.predict_action(obs)
+            # print(obs["joint_pos"])
 
 if __name__ == "__main__":
     main()
