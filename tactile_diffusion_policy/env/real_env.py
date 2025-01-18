@@ -178,27 +178,41 @@ class RealEnv:
     # ========= async env API ===========
     def get_obs(self) -> dict:
         obs = dict()
-        obs["img1"] = np.array(self.buffer1.get_latest_k(self.nobs_step))
-        obs["img2"] = np.array(self.buffer2.get_latest_k(self.nobs_step))
+        obs["img1"] = np.transpose(np.array(self.buffer1.get_latest_k(self.nobs_step)), (0,3,1,2))
+        obs["img2"] = np.transpose(np.array(self.buffer2.get_latest_k(self.nobs_step)), (0,3,1,2))
         # TODO: more modality to be added
         # obs["torque"] = ???
         joint_state = self.buffer_arm.get_latest_k(self.nobs_step)
         joint_pos_obs = []
         for single_obs in joint_state:
             joint_pos_obs.append(np.hstack((single_obs.pos(),single_obs.gripper_pos)))
-        obs["joint_pos"] = torch.Tensor(np.array(joint_pos_obs))
+        obs["joint_pos"] = np.array(joint_pos_obs)
         return obs
     
     def exec_actions(self, pose: np.ndarray, dt:int):
         # eef_state_init = self.controller.get_eef_state()
         # Do I need to implement linear interplocation here?
-        eef_state = EEFState()
-        eef_state.pose6d = pose[:6]
-        eef_state.gripper_pos = pose[7]
+        eef_state = EEFState(pose[:6], pose[6])
         eef_state.gripper_vel = 0.0
         eef_state.gripper_torque = 0.0
         eef_state.timestamp = time.time()
         self.controller.set_eef_cmd(eef_state)
+
+    def exec_actions_slow(self, pose: np.ndarray, dt:float):
+        eef_state_init = self.controller.get_eef_state()
+        eef_state_final = EEFState(pose[:6], pose[6])
+        for i in range(1000):
+            pose_curr = (np.array(eef_state_final.pose_6d()) - np.array(eef_state_init.pose_6d())) * i / 1000 + np.array(eef_state_init.pose_6d())
+            gripper_pos_curr = (eef_state_final.gripper_pos - eef_state_init.gripper_pos) * i / 1000 + eef_state_init.gripper_pos
+            eef_state_curr = EEFState(pose_curr, gripper_pos_curr)
+            eef_state_curr.gripper_vel = 0.0
+            eef_state_curr.gripper_torque = 0.0
+            eef_state_curr.timestamp = 0.0
+            print(eef_state_curr.pose_6d())
+            print(eef_state_init.pose_6d())
+            self.controller.set_eef_cmd(eef_state_curr)
+            time.sleep(dt)
+            
 
     # def get_robot_state(self):
     #     return self.robot.get_state()

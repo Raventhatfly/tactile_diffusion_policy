@@ -3,7 +3,9 @@ import torch
 import hydra
 from tactile_diffusion_policy.workspace.base_workspace import BaseWorkspace
 from tactile_diffusion_policy.common.pytorch_util import dict_apply
+import numpy as np
 import os
+import time
 
 def main():
     env = RealEnv()
@@ -47,14 +49,29 @@ def main():
     #             break
     #         env.exec_actions(action)
     with env:
-        obs = env.get_obs()
-        with torch.no_grad():
-            policy.reset()
-            print(obs["joint_pos"].shape)
-            print(obs["img1"].shape)
-            # print(obs)
-            # result = policy.predict_action(obs)
-            # print(obs["joint_pos"])
+        # act = np.array([-0.025, 0.245, 0.201, -0.135, 0.341, 1.745, 0.001])
+        act = np.array([-0.09, 0.302, 0.226, 0.121, 0.819, 2.004, 0.07204837078602602])
+        # env.exec_actions(act,1)
+        # time.sleep(10)
+        env.exec_actions_slow(act,0.01)
+        # obs = env.get_obs()
+        # with torch.no_grad():
+        #     policy.reset()
+
+        #     obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to(device))
+        #     print(obs["joint_pos"].shape)
+        #     print(obs["img1"].shape)
+            
+        #     start_time = time.perf_counter()
+        #     result = policy.predict_action(obs)
+        #     end_time = time.perf_counter()
+        #     print(end_time-start_time)
+        #     actions = result['action'][0].detach().to('cpu').numpy()
+        #     print(actions)
+            
+            # for i in range(100):
+                
+
 
 if __name__ == "__main__":
     main()
