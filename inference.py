@@ -8,7 +8,7 @@ def main():
     env = RealEnv()
     # load checkpoint
     ckpt_path = "To be deinfed"
-    payload = torch.load(open(ckpt_path, 'rb'), pickle_module=dill)
+    payload = torch.load(open(ckpt_path, 'rb')) # pickle_module=dill
     cfg = payload['cfg']
     cls = hydra.utils.get_class(cfg._target_)
     workspace = cls(cfg)
@@ -27,8 +27,8 @@ def main():
     policy.num_inference_steps = 16 # DDIM inference iterations
     policy.n_action_steps = policy.horizon - policy.n_obs_steps + 1
 
-    delta_action = cfg.task.dataset.get('delta_action', False)
-    dt = 0.1
+    # delta_action = cfg.task.dataset.get('delta_action', False)
+    # dt = 0.1
     with env:
         while True:
             obs = env.get_obs()
