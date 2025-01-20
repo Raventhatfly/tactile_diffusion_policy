@@ -23,6 +23,12 @@ And then cd to the `conda_environments/py39_environment.yaml` folder and enter:
 conda env update --name robodiff --file py39_environment.yaml
 ```
 
+## Start SLCAN
+```shell
+sudo slcand -o -f -s8 /dev/arxcan0 can0 && sudo ifconfig can0 up
+sudo slcand -o -f -s8 /dev/arxcan1 can1 && sudo ifconfig can1 up
+```
+
 ## Running the Training Script
 
 ## Runing the Inference Script

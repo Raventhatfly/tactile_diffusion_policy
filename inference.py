@@ -28,11 +28,14 @@ def main():
         policy = workspace.ema_model
 
     device = torch.device('cuda')
+    # device = torch.device('cpu')
     policy.eval().to(device)
 
     # # set inference params
-    policy.num_inference_steps = 16 # DDIM inference iterations
-    policy.n_action_steps = policy.horizon - policy.n_obs_steps + 1
+    # policy.num_inference_steps = 16 # DDIM inference iterations
+    policy.num_inference_steps = 1
+    # policy.n_action_steps = policy.horizon - policy.n_obs_steps + 1
+    policy.n_action_steps = 1
 
     # delta_action = cfg.task.dataset.get('delta_action', False)
     # dt = 0.1
@@ -50,24 +53,27 @@ def main():
     #         env.exec_actions(action)
     with env:
         # act = np.array([-0.025, 0.245, 0.201, -0.135, 0.341, 1.745, 0.001])
-        act = np.array([-0.09, 0.302, 0.226, 0.121, 0.819, 2.004, 0.07204837078602602])
+        # act = np.array([-0.09, 0.302, 0.226, 0.121, 0.819, 2.004, 0.07204837078602602])
         # env.exec_actions(act,1)
         # time.sleep(10)
-        env.exec_actions_slow(act,0.01)
-        # obs = env.get_obs()
-        # with torch.no_grad():
-        #     policy.reset()
+        # env.exec_actions_slow(act,0.01)
+        obs = env.get_obs()
+        with torch.no_grad():
+            policy.reset()
 
-        #     obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to(device))
-        #     print(obs["joint_pos"].shape)
-        #     print(obs["img1"].shape)
+            obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to(device))
+            # obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to('cpu'))
+            print(obs["joint_pos"].shape)
+            print(obs["img1"].shape)
             
-        #     start_time = time.perf_counter()
-        #     result = policy.predict_action(obs)
-        #     end_time = time.perf_counter()
-        #     print(end_time-start_time)
-        #     actions = result['action'][0].detach().to('cpu').numpy()
-        #     print(actions)
+            start_time = time.perf_counter()
+            result = policy.predict_action(obs)
+            end_time = time.perf_counter()
+            print(end_time-start_time)
+            print(next(policy.parameters()).device)
+            print(obs["img1"].device)
+            actions = result['action'][0].detach().to('cpu').numpy()
+            print(actions)
             
             # for i in range(100):
                 
