@@ -2,6 +2,7 @@ import os
 import sys
 import time
 from threading import Thread, Event, Lock
+# from multiprocessing import Process, Event, Lock
 import numpy as np
 import torch
 import pyrealsense2 as rs
@@ -145,13 +146,16 @@ class RealEnv:
         self.controller.reset_to_home()
         self.pipeline_1.start(self.config_1)
         self.pipeline_2.start(self.config_2)
+        # self.t1 = Process(target=self.camera1_thread, args=(self.finish_event,))
+        # self.t2 = Process(target=self.camera2_thread, args=(self.finish_event,))
+        # self.t3 = Process(target=self.arm_thread, args=(self.finish_event,))
         self.t1 = Thread(target=self.camera1_thread, args=(self.finish_event,))
         self.t2 = Thread(target=self.camera2_thread, args=(self.finish_event,))
         self.t3 = Thread(target=self.arm_thread, args=(self.finish_event,))
         self.t1.start()
         self.t2.start()
         self.t3.start()
-        time.sleep(2)   # Waiting for the camera to start streaming
+        time.sleep(5)   # Waiting for the camera to start streaming
 
 
     def stop(self, wait=True):
@@ -159,6 +163,8 @@ class RealEnv:
         self.t1.join()
         self.t2.join()
         self.t3.join()
+        self.pipeline_1.stop()
+        self.pipeline_2.stop()
         self.controller.reset_to_home()  
 
     # def start_wait(self):
@@ -178,6 +184,8 @@ class RealEnv:
     # ========= async env API ===========
     def get_obs(self) -> dict:
         obs = dict()
+        # tmp = np.array(self.buffer1.get_latest_k(self.nobs_step)).astype(np.float32)
+        # print(tmp.shape)
         obs["img1"] = np.transpose(np.array(self.buffer1.get_latest_k(self.nobs_step)).astype(np.float32) / 255.0, (0,3,1,2))
         obs["img2"] = np.transpose(np.array(self.buffer2.get_latest_k(self.nobs_step)).astype(np.float32) / 255.0, (0,3,1,2))
         # TODO: more modality to be added

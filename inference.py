@@ -62,36 +62,36 @@ def main():
         print(type(obs["joint_pos"]))
         print(type(obs["img1"][0][0][0][0]))
         # print(obs["img1"])
-        # with torch.no_grad():
-        #     policy.reset()
+        with torch.no_grad():
+            policy.reset()
 
-        #     obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to(device))
-        #     # obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to('cpu'))
-        #     # print(obs["joint_pos"].shape)
-        #     # print(obs["img1"].shape)
+            obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to(device))
+            # obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to('cpu'))
+            # print(obs["joint_pos"].shape)
+            # print(obs["img1"].shape)
 
 
-        #     start_time = time.perf_counter()
-        #     result = policy.predict_action(obs)
-        #     end_time = time.perf_counter()
-        #     print(end_time-start_time)
+            start_time = time.perf_counter()
+            result = policy.predict_action(obs)
+            end_time = time.perf_counter()
+            print(end_time-start_time)
 
-        # actions = result['action'][0].detach().to('cpu').numpy()
-        # print(actions)
+        actions = result['action'][0].detach().to('cpu').numpy()
+        print(actions)
             
-    with torch.no_grad():
-        policy.reset()
+    # with torch.no_grad():
+    #     policy.reset()
 
-        obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to(device))
-        # obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to('cpu'))
-        # print(obs["joint_pos"].shape)
-        # print(obs["img1"].shape)
+    #     obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to(device))
+    #     # obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to('cpu'))
+    #     # print(obs["joint_pos"].shape)
+    #     # print(obs["img1"].shape)
 
 
-        start_time = time.perf_counter()
-        result = policy.predict_action(obs)
-        end_time = time.perf_counter()
-        print(end_time-start_time)
+    #     start_time = time.perf_counter()
+    #     result = policy.predict_action(obs)
+    #     end_time = time.perf_counter()
+    #     print(end_time-start_time)
                 
 
 
