@@ -33,7 +33,7 @@ def main():
 
     # # set inference params
     # policy.num_inference_steps = 16 # DDIM inference iterations
-    policy.num_inference_steps = 1
+    policy.num_inference_steps = 16
     # policy.n_action_steps = policy.horizon - policy.n_obs_steps + 1
     policy.n_action_steps = 1
 
@@ -58,24 +58,40 @@ def main():
         # time.sleep(10)
         # env.exec_actions_slow(act,0.01)
         obs = env.get_obs()
-        with torch.no_grad():
-            policy.reset()
+        print(obs["joint_pos"])
+        print(type(obs["joint_pos"]))
+        print(type(obs["img1"][0][0][0][0]))
+        # print(obs["img1"])
+        # with torch.no_grad():
+        #     policy.reset()
 
-            obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to(device))
-            # obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to('cpu'))
-            print(obs["joint_pos"].shape)
-            print(obs["img1"].shape)
+        #     obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to(device))
+        #     # obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to('cpu'))
+        #     # print(obs["joint_pos"].shape)
+        #     # print(obs["img1"].shape)
+
+
+        #     start_time = time.perf_counter()
+        #     result = policy.predict_action(obs)
+        #     end_time = time.perf_counter()
+        #     print(end_time-start_time)
+
+        # actions = result['action'][0].detach().to('cpu').numpy()
+        # print(actions)
             
-            start_time = time.perf_counter()
-            result = policy.predict_action(obs)
-            end_time = time.perf_counter()
-            print(end_time-start_time)
-            print(next(policy.parameters()).device)
-            print(obs["img1"].device)
-            actions = result['action'][0].detach().to('cpu').numpy()
-            print(actions)
-            
-            # for i in range(100):
+    with torch.no_grad():
+        policy.reset()
+
+        obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to(device))
+        # obs = dict_apply(obs,lambda x: torch.Tensor(x).unsqueeze(0).to('cpu'))
+        # print(obs["joint_pos"].shape)
+        # print(obs["img1"].shape)
+
+
+        start_time = time.perf_counter()
+        result = policy.predict_action(obs)
+        end_time = time.perf_counter()
+        print(end_time-start_time)
                 
 
 

@@ -178,15 +178,15 @@ class RealEnv:
     # ========= async env API ===========
     def get_obs(self) -> dict:
         obs = dict()
-        obs["img1"] = np.transpose(np.array(self.buffer1.get_latest_k(self.nobs_step)), (0,3,1,2))
-        obs["img2"] = np.transpose(np.array(self.buffer2.get_latest_k(self.nobs_step)), (0,3,1,2))
+        obs["img1"] = np.transpose(np.array(self.buffer1.get_latest_k(self.nobs_step)).astype(np.float32) / 255.0, (0,3,1,2))
+        obs["img2"] = np.transpose(np.array(self.buffer2.get_latest_k(self.nobs_step)).astype(np.float32) / 255.0, (0,3,1,2))
         # TODO: more modality to be added
         # obs["torque"] = ???
         joint_state = self.buffer_arm.get_latest_k(self.nobs_step)
         joint_pos_obs = []
         for single_obs in joint_state:
             joint_pos_obs.append(np.hstack((single_obs.pos(),single_obs.gripper_pos)))
-        obs["joint_pos"] = np.array(joint_pos_obs)
+        obs["joint_pos"] = np.array(joint_pos_obs).astype(np.float32)
         return obs
     
     def exec_actions(self, pose: np.ndarray, dt:int):
